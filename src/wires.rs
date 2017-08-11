@@ -27,6 +27,11 @@ pub fn strings_from_file<'a>(path: &str) -> Result<String, &'a str> {
     }
 }
 
+fn bytes_to_strings(bytes: &Vec<u8>) {
+    let min_consecutive_chars = 3;
+    ()
+}
+
 
 #[test]
 fn it_reads_strings_from_files() {
@@ -39,4 +44,10 @@ fn it_raises_if_no_file_exists() {
     let actual = strings_from_file("no such file");
     let expected = Result::Err("Could not open file");
     assert_eq!(expected, actual)
+}
+
+#[test]
+fn it_is_a_function() {
+    let input = vec![3u8, 2u8];
+    assert_eq!(bytes_to_strings(&input), ());
 }
