@@ -1,6 +1,7 @@
 use std::env;
 use std::io::{self, Read, BufReader};
 use std::fs::File;
+use std::process; 
 
 mod wires;
 
@@ -21,15 +22,22 @@ fn main() {
                         let mut handle = stdout.lock();
                         wires::bytes_to_strings(&contents, &mut handle);
                     },
-                    Err(_) => println!("An error occurred reading the buffer")
+                    Err(_) => {
+                        println!("An error occurred reading the buffer");
+                        process::exit(1);
+                    }
                 }
             },
-            Err(_) => println!("Could not read from file.")
+            Err(_) => { 
+                println!("Could not read from file.");
+                process::exit(1);
+            }
 
         }
 
     } else {
         println!("Please specify a path");
+        process::exit(1); 
     }
 }
 
