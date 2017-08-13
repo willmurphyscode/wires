@@ -2,6 +2,8 @@ use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
+use std::io::Write;
+use std::io::Cursor;
 use std::ascii::AsciiExt;
 use std::str;
 
@@ -50,18 +52,37 @@ pub fn strings_from_file<'a>(path: &str) -> Result<String, &'a str> {
     }
 }
 
-fn bytes_to_strings(bytes: &[u8]) {
+fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
     let min_consecutive_chars = 3;
-    let mut guard = GLOBAL_BUFFER.lock().unwrap();
-    if bytes.is_ascii() {
-        let result = str::from_utf8(&bytes);
+    let mut current_bytes : Vec<u8> = Vec::new(); 
+
+    for b in bytes {
+        if b.is_ascii() {
+            current_bytes.push(*b);
+        }
+        else  {
+            if current_bytes.len() >= min_consecutive_chars {
+                let result = str::from_utf8(&current_bytes);
+                match result {
+                    Ok(string) => {
+                        println!("Found string: {}", string.clone());
+                        writeln!(w, "{}", string);
+                    },
+                    Err(_) => {}
+                }
+            }
+            current_bytes.truncate(0)
+        }
+    }
+    if current_bytes.len() >= min_consecutive_chars {
+        let result = str::from_utf8(&current_bytes);
         match result {
             Ok(string) => {
-                guard.insert(string.to_string());
+                println!("Found string: {}", string.clone());
+                writeln!(w, "{}", string);
             },
             Err(_) => {}
         }
-        
     }
 }
 
@@ -80,10 +101,11 @@ fn it_raises_if_no_file_exists() {
 }
 
 #[test]
-fn it_pushes_strings_to_global_buffer() {
-    bytes_to_strings("hi".as_bytes());
-    let expected = "hi";
-    let mut guard = GLOBAL_BUFFER.lock().unwrap();
-    let actual = guard.get_by_index(0);
+fn it_writes_to_the_buffer() {
+    let mut cursor = Cursor::new(Vec::new()); 
+    bytes_to_strings("hello".as_bytes(), &mut cursor);
+    let expected = "hello\n";
+    let vec = cursor.into_inner(); 
+    let actual = String::from_utf8(vec).unwrap();
     assert_eq!(expected, actual);
 }
