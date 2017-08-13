@@ -7,52 +7,53 @@ use std::io::Cursor;
 use std::ascii::AsciiExt;
 use std::str;
 
-use std::sync::Mutex;
+// use std::sync::Mutex;
 
-lazy_static! {
-    static ref GLOBAL_BUFFER: Mutex<Buffer> = Mutex::new(Buffer::new());
-}
+// lazy_static! {
+//     static ref GLOBAL_BUFFER: Mutex<Buffer> = Mutex::new(Buffer::new());
+// }
 
-pub struct Buffer {
-    strs: Vec<String>
-}
+// pub struct Buffer {
+//     strs: Vec<String>
+// }
 
-impl Buffer {
-    pub fn new() -> Buffer { Buffer { strs: Vec::new() } }
+// impl Buffer {
+//     pub fn new() -> Buffer { Buffer { strs: Vec::new() } }
 
-    pub fn insert(&mut self, s: String) {
-        self.strs.push(s)
-    }
-    pub fn get_by_index(&self, ix: usize) -> String {
-        self.strs[ix].clone()
-    }
-}
+//     pub fn insert(&mut self, s: String) {
+//         self.strs.push(s)
+//     }
+//     pub fn get_by_index(&self, ix: usize) -> String {
+//         self.strs[ix].clone()
+//     }
+// }
 
-pub fn strings_from_file<'a>(path: &str) -> Result<String, &'a str> {
-    let fs_result = File::open(path);
-    match fs_result {
-        Ok(file) => {
-            let mut reader = BufReader::new(file);
-            let mut contents = String::new();
-            let read_result = reader.read_to_string(&mut contents);
-            match read_result {
-                Ok(_) => {
-                    Result::Ok(contents.to_string())              
-                },
-                Err(error) => {
-                    print!("{:?}", error);                    
-                    Result::Err("Could not read file")
-                }
-            }
-        },
-        Err(error) => {
-            print!("{:?}", error);
-            Result::Err("Could not open file")
-        }
-    }
-}
 
-fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
+// pub fn strings_from_file<'a, W: Write + 'static>(path: &str, buf: &'static mut W) -> Result<String, &'a str> {
+//     let fs_result = File::open(path);
+//     match fs_result {
+//         Ok(file) => {
+//             let mut reader = BufReader::new(file);
+//             let mut contents : Vec<u8> = Vec::new(); 
+//             let read_result = reader.read_to_string(&mut contents);
+//             match read_result {
+//                 Ok(_) => {
+//                     Result::Ok(contents.to_string())              
+//                 },
+//                 Err(error) => {
+//                     print!("{:?}", error);                    
+//                     Result::Err("Could not read file")
+//                 }
+//             }
+//         },
+//         Err(error) => {
+//             print!("{:?}", error);
+//             Result::Err("Could not open file")
+//         }
+//     }
+// }
+
+pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
     let min_consecutive_chars = 3;
     let mut current_bytes : Vec<u8> = Vec::new(); 
 
@@ -65,8 +66,7 @@ fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
                 let result = str::from_utf8(&current_bytes);
                 match result {
                     Ok(string) => {
-                        println!("Found string: {}", string.clone());
-                        writeln!(w, "{}", string);
+                        writeln!(w, "{}", string).expect("Failed to write to supplied stream");
                     },
                     Err(_) => {}
                 }
@@ -78,8 +78,7 @@ fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
         let result = str::from_utf8(&current_bytes);
         match result {
             Ok(string) => {
-                println!("Found string: {}", string.clone());
-                writeln!(w, "{}", string);
+                writeln!(w, "{}", string).expect("Failed to write to supplied stream.");
             },
             Err(_) => {}
         }
@@ -89,13 +88,17 @@ fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
 
 #[test]
 fn it_reads_strings_from_files() {
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
     let expected = Result::Ok("Hello, world.".to_string());
-    assert_eq!(strings_from_file("./src/hello.txt"), expected);
+    assert_eq!(strings_from_file("./src/hello.txt", &mut handle), expected);
 }
 
 #[test]
 fn it_raises_if_no_file_exists() {
-    let actual = strings_from_file("no such file");
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+    let actual = strings_from_file("no such file", &mut handle);
     let expected = Result::Err("Could not open file");
     assert_eq!(expected, actual)
 }
