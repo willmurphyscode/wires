@@ -32,12 +32,26 @@ impl Buffer {
         self.strs[self.strs.len() - 1].clone()
     }
 
+    pub fn clear(&mut self) {
+        self.strs.truncate(0);
+    }
+
+
+
     pub fn print(&self) {
         self.print_all(&self.strs);
     }
 
     pub fn join_all(&self) -> String {
-        self.strs.join("\n")
+        if self.any() {
+            self.strs.join("\n")
+        } else {
+            "".to_string()
+        }
+    }
+
+    fn any(&self) -> bool {
+        self.strs.len() > 0
     }
 
     fn print_all(&self, strs : &Vec<String>) {
@@ -61,7 +75,8 @@ pub fn strings_from_file<'a>(path: &str) -> Result<String, &'a str> {
                 Ok(_) => {
                     bytes_to_strings(&contents);
                     let guard = GLOBAL_BUFFER.lock().unwrap();
-                    Result::Ok(guard.get_last())             
+
+                    Result::Ok(guard.join_all())             
                 },
                 Err(error) => {
                     print!("{:?}", error);                    
@@ -80,6 +95,7 @@ fn bytes_to_strings(bytes: &[u8]) {
     let min_consecutive_chars = 3;
     let mut current_bytes : Vec<u8> = Vec::new(); 
     let mut guard = GLOBAL_BUFFER.lock().unwrap();
+    guard.clear();
     for b in bytes {
         if b.is_ascii() {
             current_bytes.push(*b);
@@ -110,15 +126,35 @@ fn bytes_to_strings(bytes: &[u8]) {
 }
 }
 
+fn clear_buffer() {
+    let mut guard = GLOBAL_BUFFER.lock().unwrap();
+    guard.clear();
+}
+
+#[test]
+fn clear_buffer_always_works() {
+    for i in 0..10 {
+        let mut guard = GLOBAL_BUFFER.lock().unwrap();
+        guard.insert("cheese".to_string());
+        drop(guard);
+        clear_buffer();
+        let cleared_guard = GLOBAL_BUFFER.lock().unwrap();
+        assert_eq!("", cleared_guard.join_all());
+    }
+
+}
+
 
 #[test]
 fn it_reads_strings_from_files() {
+    clear_buffer();
     let expected = Result::Ok("Hello, world.".to_string());
     assert_eq!(strings_from_file("./src/hello.txt"), expected);
 }
 
 #[test]
 fn it_raises_if_no_file_exists() {
+    clear_buffer();   
     let actual = strings_from_file("no such file");
     let expected = Result::Err("Could not open file");
     assert_eq!(expected, actual)
@@ -126,9 +162,21 @@ fn it_raises_if_no_file_exists() {
 
 #[test]
 fn it_pushes_strings_to_global_buffer() {
+    clear_buffer(); 
     bytes_to_strings("hello".as_bytes());
     let expected = "hello";
     let guard = GLOBAL_BUFFER.lock().unwrap();
     let actual = guard.get_last();
     assert_eq!(expected, actual);
+}
+
+#[test]
+fn it_returns_empty_str_on_bad_bytes() {
+    clear_buffer();  
+    let no_string_bytes = vec![254u8, 254u8, 254u8, 254u8, 254u8, 254u8];
+    bytes_to_strings(&no_string_bytes);
+    let expected = "".to_string();
+    let guard = GLOBAL_BUFFER.lock().unwrap();
+    let actual = guard.join_all();
+    assert_eq!(expected, actual);    
 }
