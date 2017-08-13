@@ -1,57 +1,6 @@
-use std::path::Path;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Read;
 use std::io::Write;
-use std::io::Cursor;
 use std::ascii::AsciiExt;
 use std::str;
-
-// use std::sync::Mutex;
-
-// lazy_static! {
-//     static ref GLOBAL_BUFFER: Mutex<Buffer> = Mutex::new(Buffer::new());
-// }
-
-// pub struct Buffer {
-//     strs: Vec<String>
-// }
-
-// impl Buffer {
-//     pub fn new() -> Buffer { Buffer { strs: Vec::new() } }
-
-//     pub fn insert(&mut self, s: String) {
-//         self.strs.push(s)
-//     }
-//     pub fn get_by_index(&self, ix: usize) -> String {
-//         self.strs[ix].clone()
-//     }
-// }
-
-
-// pub fn strings_from_file<'a, W: Write + 'static>(path: &str, buf: &'static mut W) -> Result<String, &'a str> {
-//     let fs_result = File::open(path);
-//     match fs_result {
-//         Ok(file) => {
-//             let mut reader = BufReader::new(file);
-//             let mut contents : Vec<u8> = Vec::new(); 
-//             let read_result = reader.read_to_string(&mut contents);
-//             match read_result {
-//                 Ok(_) => {
-//                     Result::Ok(contents.to_string())              
-//                 },
-//                 Err(error) => {
-//                     print!("{:?}", error);                    
-//                     Result::Err("Could not read file")
-//                 }
-//             }
-//         },
-//         Err(error) => {
-//             print!("{:?}", error);
-//             Result::Err("Could not open file")
-//         }
-//     }
-// }
 
 pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
     let min_consecutive_chars = 3;

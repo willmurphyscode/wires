@@ -1,6 +1,5 @@
 use std::env;
-use std::io::{self, Write, Read, BufReader};
-use std::path::Path;
+use std::io::{self, Read, BufReader};
 use std::fs::File;
 
 mod wires;
@@ -25,7 +24,7 @@ fn main() {
                     Err(_) => println!("An error occurred reading the buffer")
                 }
             },
-            Err(msg) => println!("Could not read from file.")
+            Err(_) => println!("Could not read from file.")
 
         }
 
