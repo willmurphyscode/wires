@@ -1,6 +1,9 @@
 use std::env;
+#[macro_use] extern crate lazy_static;
 
 mod wires;
+
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
