@@ -2,9 +2,17 @@ use std::io::Write;
 use std::ascii::AsciiExt;
 use std::str;
 
-pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
-    let min_consecutive_chars = 3;
+#[derive(Debug)]
+pub struct Options {
+   pub print_offset: bool,
+   pub match_length: usize,
+}
+
+pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
+    let min_consecutive_chars = opts.match_length;
     let mut current_bytes : Vec<u8> = Vec::new(); 
+
+    let mut offset = 0usize; 
 
     for b in bytes {
         if b.is_ascii() {
@@ -15,19 +23,28 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
                 let result = str::from_utf8(&current_bytes);
                 match result {
                     Ok(string) => {
-                        writeln!(w, "{}", string).expect("Failed to write to supplied stream");
+                        if opts.print_offset {
+                            writeln!(w, "0x{:X}: {}", offset, string).expect("Failed to write to supplied stream");
+                        } else {
+                            writeln!(w, "{}", string).expect("Failed to write to supplied stream");
+                        }
                     },
                     Err(_) => {}
                 }
             }
-            current_bytes.truncate(0)
+            current_bytes.truncate(0);
+            offset = offset + 1; 
         }
     }
     if current_bytes.len() >= min_consecutive_chars {
         let result = str::from_utf8(&current_bytes);
         match result {
             Ok(string) => {
-                writeln!(w, "{}", string).expect("Failed to write to supplied stream.");
+                if opts.print_offset {
+                    writeln!(w, "0x{:X}: {}", offset, string).expect("Failed to write to supplied stream");
+                } else {
+                    writeln!(w, "{}", string).expect("Failed to write to supplied stream");
+                } 
             },
             Err(_) => {}
         }
