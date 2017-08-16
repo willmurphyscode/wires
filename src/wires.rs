@@ -2,8 +2,14 @@ use std::io::Write;
 use std::ascii::AsciiExt;
 use std::str;
 
-pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W) {
-    let min_consecutive_chars = 3;
+#[derive(Debug)]
+pub struct Options {
+   pub print_offset: bool,
+   pub match_length: usize,
+}
+
+pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
+    let min_consecutive_chars = opts.match_length;
     let mut current_bytes : Vec<u8> = Vec::new(); 
 
     for b in bytes {
