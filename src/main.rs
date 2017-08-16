@@ -17,6 +17,7 @@ fn main() {
                             .help("The file to get strings out of")
                             .required(true)
                             .index(1))
+                        //TODO actually accept offset radices besides hex
                         .arg(Arg::with_name("offset")
                             .short("t")
                             .long("radix")
