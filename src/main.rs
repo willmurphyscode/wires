@@ -14,11 +14,11 @@ fn parse_options() -> wires::Options {
                             .help("The file to get strings out of")
                             .required(true)
                             .index(1))
-                        //TODO actually accept offset radices besides hex
-                        .arg(Arg::with_name("offset")
+                        .arg(Arg::with_name("radix")
                             .short("t")
                             .long("radix")
                             .help("Print offset where strings occur?")
+                            .takes_value(true)
                             .required(false))
                         .arg(Arg::with_name("bytes")
                             .short("n")
@@ -27,7 +27,8 @@ fn parse_options() -> wires::Options {
                         .get_matches(); 
 
     let path = matches.value_of("FILE").expect("Please provide a path");
-    let print_offset = matches.is_present("offset");
+    let option_radix = matches.value_of("radix");
+    let radix = wires::string_to_offset_radix(option_radix).expect("Invalid offset radix specified");
 
     let option_bytes = matches.value_of("bytes");
     let mut bytes = 3usize; 
@@ -39,7 +40,7 @@ fn parse_options() -> wires::Options {
     }
 
     wires::Options { 
-        print_offset: print_offset, 
+        print_offset: radix, 
         match_length: bytes,
         path: path.to_string()
     }

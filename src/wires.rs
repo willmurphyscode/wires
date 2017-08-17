@@ -3,11 +3,31 @@ use std::ascii::AsciiExt;
 use std::str;
 use std::fmt;
 
-#[derive(Debug)]
 pub struct Options {
-   pub print_offset: bool,
+   pub print_offset: OffsetRadix,
    pub match_length: usize,
    pub path: String
+}
+
+#[derive(Clone, Copy)]
+pub enum OffsetRadix {
+    None,
+    Hex,
+    Octal,
+    Decimal
+}
+
+pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
+    match input{
+        Some(string) => match string {
+            "x" => Ok(OffsetRadix::Hex),
+            "o" => Ok(OffsetRadix::Octal),
+            "d" => Ok(OffsetRadix::Decimal),
+            _ => Err(())
+        },
+        None => Ok(OffsetRadix::None)
+    }
+
 }
 
 pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
@@ -32,7 +52,7 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
                 }
             }
             current_bytes.truncate(0);
-            offset = offset + 1; 
+            offset = offset + 1;
         }
     }
     if current_bytes.len() >= min_consecutive_chars {
@@ -47,11 +67,15 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
     }
 }
 
-fn offset_string(offset: usize, print_offset: bool) -> String {
-    let mut output = "".to_string();   
-    if print_offset {
-        fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap();
+fn offset_string(offset: usize, radix: OffsetRadix) -> String {
+    let mut output = "".to_string();
+    match radix {
+        OffsetRadix::Hex => fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap(),
+        OffsetRadix::Octal => fmt::write(&mut output, format_args!("0o{:o}: ", offset)).unwrap(),
+        OffsetRadix::Decimal => fmt::write(&mut output, format_args!("{}: ", offset)).unwrap(),
+        OffsetRadix::None => ()
     }
+
     output
 }
 
@@ -64,15 +88,15 @@ fn it_writes_to_the_buffer() {
     use std::io::Cursor;
 
     let opts = Options {
-        print_offset: false,
+        print_offset: OffsetRadix::None,
         match_length: 3,
         path: "".to_string()
     };
 
-    let mut cursor = Cursor::new(Vec::new()); 
+    let mut cursor = Cursor::new(Vec::new());
     bytes_to_strings("hello".as_bytes(), &mut cursor, &opts);
     let expected = "hello\n";
-    let vec = cursor.into_inner(); 
+    let vec = cursor.into_inner();
     let actual = String::from_utf8(vec).unwrap();
     assert_eq!(expected, actual);
 }
@@ -83,7 +107,7 @@ fn it_omits_intermediate_nonsense() {
     let mut cursor = Cursor::new(Vec::new());
 
     let opts = Options {
-        print_offset: false,
+        print_offset: OffsetRadix::None,
         match_length: 3,
         path: "".to_string()
     };
