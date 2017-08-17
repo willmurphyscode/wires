@@ -10,6 +10,26 @@ pub struct Options {
    pub path: String
 }
 
+pub enum OffsetRadix {
+    None,
+    Hex,
+    Octal,
+    Decimal
+}
+
+pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
+    match input{
+        Some(string) => match string {
+            "x" => Ok(OffsetRadix::Hex),
+            "o" => Ok(OffsetRadix::Hex),
+            "d" => Ok(OffsetRadix::Decimal),
+            _ => Err(())
+        },
+        None => Ok(OffsetRadix::None)
+    }
+
+}
+
 pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
     let min_consecutive_chars = opts.match_length;
     let mut current_bytes : Vec<u8> = Vec::new(); 
