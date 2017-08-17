@@ -6,10 +6,7 @@ extern crate clap;
 use clap::{Arg, App};
 mod wires;
 
-
-
-
-fn main() {
+fn parse_options() -> wires::Options {
     let matches = App::new("Wires: strings in Rust")
                         .version("0.1")
                         .about("Gets ascii strings out of files")
@@ -38,17 +35,21 @@ fn main() {
         Some(string) => {
             bytes = str::parse(string).expect("-n must take an integer value");
         },
-        None => {
-            println!("no bytes")
-        }
+        None => ()
     }
 
-    let options = wires::Options { 
+    wires::Options { 
         print_offset: print_offset, 
-        match_length: bytes 
-    };
+        match_length: bytes,
+        path: path.to_string()
+    }
+}
 
-    let fs_result = File::open(&path);
+
+fn main() {
+
+    let options = parse_options(); 
+    let fs_result = File::open(&options.path);
     match fs_result {
         Ok(file) =>  {
             let mut reader = BufReader::new(file);

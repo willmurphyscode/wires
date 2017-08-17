@@ -1,11 +1,13 @@
 use std::io::Write;
 use std::ascii::AsciiExt;
 use std::str;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Options {
    pub print_offset: bool,
    pub match_length: usize,
+   pub path: String
 }
 
 pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
@@ -23,11 +25,8 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
                 let result = str::from_utf8(&current_bytes);
                 match result {
                     Ok(string) => {
-                        if opts.print_offset {
-                            writeln!(w, "0x{:X}: {}", offset, string).expect("Failed to write to supplied stream");
-                        } else {
-                            writeln!(w, "{}", string).expect("Failed to write to supplied stream");
-                        }
+                        let offset_string = offset_string(offset, opts.print_offset);
+                        writeln!(w, "{}{}", offset_string, string).expect("Failed to write to supplied stream");
                     },
                     Err(_) => {}
                 }
@@ -40,15 +39,20 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
         let result = str::from_utf8(&current_bytes);
         match result {
             Ok(string) => {
-                if opts.print_offset {
-                    writeln!(w, "0x{:X}: {}", offset, string).expect("Failed to write to supplied stream");
-                } else {
-                    writeln!(w, "{}", string).expect("Failed to write to supplied stream");
-                } 
+                let offset_string = offset_string(offset, opts.print_offset);
+                writeln!(w, "{}{}", offset_string, string).expect("Failed to write to supplied stream");
             },
             Err(_) => {}
         }
     }
+}
+
+fn offset_string(offset: usize, print_offset: bool) -> String {
+    let mut output = "".to_string();   
+    if print_offset {
+        fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap();
+    }
+    output
 }
 
 
@@ -56,10 +60,17 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
 
 #[test]
 fn it_writes_to_the_buffer() {
+
     use std::io::Cursor;
 
+    let opts = Options {
+        print_offset: false,
+        match_length: 3,
+        path: "".to_string()
+    };
+
     let mut cursor = Cursor::new(Vec::new()); 
-    bytes_to_strings("hello".as_bytes(), &mut cursor);
+    bytes_to_strings("hello".as_bytes(), &mut cursor, &opts);
     let expected = "hello\n";
     let vec = cursor.into_inner(); 
     let actual = String::from_utf8(vec).unwrap();
@@ -71,6 +82,12 @@ fn it_omits_intermediate_nonsense() {
     use std::io::Cursor;
     let mut cursor = Cursor::new(Vec::new());
 
+    let opts = Options {
+        print_offset: false,
+        match_length: 3,
+        path: "".to_string()
+    };
+
     let mut bytes : Vec<u8> = Vec::new();
     for b in "Hello".as_bytes() {
         bytes.push(*b);
@@ -80,7 +97,7 @@ fn it_omits_intermediate_nonsense() {
     for b in "World".as_bytes() {
         bytes.push(*b);
     }
-    bytes_to_strings(&bytes, &mut cursor);
+    bytes_to_strings(&bytes, &mut cursor, &opts);
     let expected = "Hello\nWorld\n";
     let vec = cursor.into_inner();
     let actual = String::from_utf8(vec).unwrap();
