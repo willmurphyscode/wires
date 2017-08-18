@@ -1,4 +1,5 @@
 use std::io::Write;
+
 use std::ascii::AsciiExt;
 use std::str;
 use std::fmt;
@@ -78,6 +79,12 @@ fn offset_string(offset: usize, radix: OffsetRadix) -> String {
 
     output
 }
+
+
+fn is_printable_ascii(b: u8) -> bool {
+    b.is_ascii() && !b.is_ascii_control()
+}
+
 
 
 

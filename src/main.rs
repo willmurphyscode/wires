@@ -1,3 +1,5 @@
+#![feature(ascii_ctype)]
+
 use std::io::{self, Read, BufReader};
 use std::fs::File;
 use std::process; 
