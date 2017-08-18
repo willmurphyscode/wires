@@ -1,7 +1,8 @@
-use std::io::Write;
+use std::io::{stderr, Write, ErrorKind};
 use std::ascii::AsciiExt;
 use std::str;
 use std::fmt;
+use std::process;
 
 pub struct Options {
    pub print_offset: OffsetRadix,
@@ -46,7 +47,17 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
                 match result {
                     Ok(string) => {
                         let offset_string = offset_string(offset, opts.print_offset);
-                        writeln!(w, "{}{}", offset_string, string).expect("Failed to write to supplied stream");
+                        let write_result = writeln!(w, "{}{}", offset_string, string);
+                        match write_result {
+                            Ok(_) => (),
+                            Err(e) => match e.kind() {
+                                ErrorKind::BrokenPipe => break,
+                                _ => {
+                                    writeln!(stderr(), "{}", e).unwrap();
+                                    process::exit(1);
+                                }
+                            }
+                        }
                     },
                     Err(_) => {}
                 }
@@ -60,7 +71,17 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
         match result {
             Ok(string) => {
                 let offset_string = offset_string(offset, opts.print_offset);
-                writeln!(w, "{}{}", offset_string, string).expect("Failed to write to supplied stream");
+                let write_result = writeln!(w, "{}{}", offset_string, string);
+                match write_result {
+                    Ok(_) => (),
+                    Err(e) => match e.kind() {
+                        ErrorKind::BrokenPipe => (),
+                        _ => {
+                            writeln!(stderr(), "{}", e).unwrap();                            
+                            process::exit(1);
+                        }
+                    }
+                }
             },
             Err(_) => {}
         }
