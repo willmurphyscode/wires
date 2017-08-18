@@ -31,7 +31,7 @@ fn parse_options() -> wires::Options {
     let radix = wires::string_to_offset_radix(option_radix).expect("Invalid offset radix specified");
 
     let option_bytes = matches.value_of("bytes");
-    let mut bytes = 3usize; 
+    let mut bytes = 4usize; 
     match option_bytes {
         Some(string) => {
             bytes = str::parse(string).expect("-n must take an integer value");
