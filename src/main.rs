@@ -52,21 +52,11 @@ fn main() {
     let options = parse_options(); 
     let fs_result = File::open(&options.path);
     match fs_result {
-        Ok(file) =>  {
-            let mut reader = BufReader::new(file);
-            let mut contents : Vec<u8> = Vec::new();
-            let read_result = reader.read_to_end(&mut contents);
-            match read_result {
-                Ok(_) => {
-                    let stdout = io::stdout();
-                    let mut handle = stdout.lock();
-                    wires::bytes_to_strings(&contents, &mut handle, &options);
-                },
-                Err(_) => {
-                    println!("An error occurred reading the buffer");
-                    process::exit(1);
-                }
-            }
+        Ok(mut file) => {
+            let stdout = io::stdout();
+            let mut handle = stdout.lock();
+            wires::bytes_to_strings(&mut file, &mut handle, &options);
+                
         },
         Err(_) => { 
             println!("Could not read from file.");

@@ -1,4 +1,4 @@
-use std::io::{stderr, Write, ErrorKind};
+use std::io::{stderr, Read, Write, ErrorKind};
 use std::ascii::AsciiExt;
 use std::str;
 use std::fmt;
@@ -31,39 +31,47 @@ pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
 
 }
 
-pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
+pub fn bytes_to_strings<R: Read, W: Write>(stream: &mut R, w:  &mut W, opts: &Options) {
     let min_consecutive_chars = opts.match_length;
     let mut current_bytes : Vec<u8> = Vec::new(); 
 
     let mut offset = 0usize; 
-
-    for b in bytes {
-        if b.is_ascii() {
-            current_bytes.push(*b);
-        }
-        else  {
-            if current_bytes.len() >= min_consecutive_chars {
-                let result = str::from_utf8(&current_bytes);
-                match result {
-                    Ok(string) => {
-                        let offset_string = offset_string(offset, opts.print_offset);
-                        let write_result = writeln!(w, "{}{}", offset_string, string);
-                        match write_result {
-                            Ok(_) => (),
-                            Err(e) => match e.kind() {
-                                ErrorKind::BrokenPipe => break,
-                                _ => {
-                                    writeln!(stderr(), "{}", e).unwrap();
-                                    process::exit(1);
-                                }
-                            }
-                        }
-                    },
-                    Err(_) => {}
+    for byte_result in stream.bytes() {
+        match byte_result {
+            Ok(b) => {
+                if b.is_ascii() {
+                    current_bytes.push(b);
                 }
+                else  {
+                    if current_bytes.len() >= min_consecutive_chars {
+                        let result = str::from_utf8(&current_bytes);
+                        match result {
+                            Ok(string) => {
+                                let offset_string = offset_string(offset, opts.print_offset);
+                                let write_result = writeln!(w, "{}{}", offset_string, string);
+                                match write_result {
+                                    Ok(_) => (),
+                                    Err(e) => match e.kind() {
+                                        ErrorKind::BrokenPipe => break,
+                                        _ => {
+                                            writeln!(stderr(), "{}", e).unwrap();
+                                            process::exit(1);
+                                        }
+                                    }
+                                }
+                            },
+                            Err(_) => {}
+                        }
+                    }
+                    current_bytes.truncate(0);
+                    offset = offset + 1;
+                }
+
             }
-            current_bytes.truncate(0);
-            offset = offset + 1;
+            Err(e) => {
+                writeln!(stderr(), "{}", e).unwrap();
+                process::exit(1);
+            }
         }
     }
     if current_bytes.len() >= min_consecutive_chars {
@@ -115,7 +123,9 @@ fn it_writes_to_the_buffer() {
     };
 
     let mut cursor = Cursor::new(Vec::new());
-    bytes_to_strings("hello".as_bytes(), &mut cursor, &opts);
+    let  input_vec = "hello".as_bytes();
+    let mut slice : &[u8] = input_vec;
+    bytes_to_strings(&mut slice, &mut cursor, &opts);
     let expected = "hello\n";
     let vec = cursor.into_inner();
     let actual = String::from_utf8(vec).unwrap();
@@ -142,7 +152,9 @@ fn it_omits_intermediate_nonsense() {
     for b in "World".as_bytes() {
         bytes.push(*b);
     }
-    bytes_to_strings(&bytes, &mut cursor, &opts);
+    let mut slice : &[u8] = bytes.as_mut(); 
+
+    bytes_to_strings(&mut slice, &mut cursor, &opts);
     let expected = "Hello\nWorld\n";
     let vec = cursor.into_inner();
     let actual = String::from_utf8(vec).unwrap();
