@@ -3,8 +3,11 @@ use std::fs::File;
 use std::process; 
 
 extern crate clap;
+#[macro_use]
+extern crate nom;
 use clap::{Arg, App};
 mod wires;
+mod z_string;
 
 fn parse_options() -> wires::Options {
     let matches = App::new("Wires: strings in Rust")
