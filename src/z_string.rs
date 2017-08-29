@@ -1,7 +1,37 @@
 use nom::IResult;
 
+#[derive(Debug)]
+struct ZWord {
+    first: u8,
+    second: u8,
+    third: u8,
+    last_bit: u8
+}
+
 
 named!( take_5_bits<u8>, bits!( take_bits!( u8, 5 ) ) );
+
+named!( take_bit<u8>, bits!( take_bits!( u8, 1) ) );
+
+named!( take_z_word<(u8,u8,u8,u8)>,
+    bits!(
+        do_parse!(
+            first: ( take_bits!( u8, 5 ) ) >>
+            second: ( take_bits!( u8, 5 ) )>>
+            third: ( take_bits!( u8, 5 ) ) >>
+            last_bit: ( take_bits!( u8, 1 ) ) >>
+            (
+                // ZWord {
+                //     first: first,
+                //     second: second,
+                //     third: third,
+                //     last_bit: last_bit
+                // }
+                (first, second, third, last_bit)
+            )
+        )
+    )   
+);
 
 fn char_from_5_bits(fiver: u8) -> char {
     let alphabet_table: Vec<char> = vec![
@@ -10,9 +40,30 @@ fn char_from_5_bits(fiver: u8) -> char {
     alphabet_table[fiver as usize]
 }
 
+/* The other two alphabet tables
+[| " "; "?"; "?"; "?"; "?"; "?"; "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J";
+   "K"; "L"; "M"; "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z" |];
+[| " "; "?"; "?"; "?"; "?"; "?"; "?"; "\n"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7";
+   "8"; "9"; "."; ","; "!"; "?"; "_"; "#"; "'"; "\""; "/"; "\\"; "-"; ":"; "("; ")" |] |]
+*/
 
-
-
+fn z_string_fragment(bytes: &[u8]) -> String {
+    let word = take_z_word(bytes);
+    println!("********************* {:?}", word);
+    match word {
+        IResult::Incomplete(foo) => println!("{:?}", foo),
+        _ => ()
+    }
+    // let ZWord { first: a, second: b, third: c, last_bit: _ } = word; 
+    // let mut chars = vec![
+    //     char_from_5_bits(a),
+    //     char_from_5_bits(b),
+    //     char_from_5_bits(c)
+    // ];
+    // let s : String = chars.into_iter().collect();
+    // s
+    "NOT IMPLEMENTED".to_string()
+}
 
 #[test]
 fn it_takes_bits() {
@@ -27,5 +78,19 @@ fn it_can_get_letter() {
     let sl = &starts_with_six[..];
     let expected = 'a';
     let actual = char_from_5_bits( take_5_bits(sl).to_result().unwrap() );
+    assert_eq!(expected, actual);
+}
+
+#[test]
+fn it_can_parse_the() {
+    let bytes_for_the = vec! [0b1100_1011u8, 0b0101_0101u8];
+
+    let sl = &bytes_for_the[..];
+
+
+    
+
+    let expected = "the".to_string();
+    let actual = z_string_fragment(sl);
     assert_eq!(expected, actual);
 }
