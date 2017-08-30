@@ -11,8 +11,6 @@ struct ZWord {
 
 named!( take_5_bits<u8>, bits!( take_bits!( u8, 5 ) ) );
 
-named!( take_bit<u8>, bits!( take_bits!( u8, 1) ) );
-
 named!( take_z_word<&[u8],ZWord>,
     bits!(
         do_parse!(
@@ -27,7 +25,6 @@ named!( take_z_word<&[u8],ZWord>,
                     third: third,
                     last_bit: last_bit
                 }
-                //(first, second, third, last_bit)
             )
         )
     )   
@@ -48,15 +45,9 @@ fn char_from_5_bits(fiver: u8) -> char {
 */
 
 fn z_string_fragment(bytes: &[u8]) -> String {
-    let word_result = take_z_word(bytes);
-    println!("********************* {:?}", word_result);
-    // match word_result {
-    //     IResult::Done(_, word) => println!("{:?}", word),
-    //     _ => ()
-    // }
-    if let IResult::Done(_, word) = word_result {
+    if let IResult::Done(_, word) = take_z_word(bytes) {
         let ZWord { first: a, second: b, third: c, last_bit: _ } = word; 
-        let mut chars = vec![
+        let chars = vec![
             char_from_5_bits(a),
             char_from_5_bits(b),
             char_from_5_bits(c)
@@ -64,7 +55,7 @@ fn z_string_fragment(bytes: &[u8]) -> String {
         let s : String = chars.into_iter().collect();
         return s;
     }
-
+    //TODO handle error case
     "NOT IMPLEMENTED".to_string()
 }
 
@@ -87,12 +78,7 @@ fn it_can_get_letter() {
 #[test]
 fn it_can_parse_the() {
     let bytes_for_the = vec! [0b1100_1011u8, 0b0101_0101u8];
-
     let sl = &bytes_for_the[..];
-
-
-    
-
     let expected = "the".to_string();
     let actual = z_string_fragment(sl);
     assert_eq!(expected, actual);
