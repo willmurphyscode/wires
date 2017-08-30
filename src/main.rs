@@ -32,11 +32,9 @@ fn parse_options() -> wires::Options {
 
     let option_bytes = matches.value_of("bytes");
     let mut bytes = 4usize; 
-    match option_bytes {
-        Some(string) => {
-            bytes = str::parse(string).expect("-n must take an integer value");
-        },
-        None => ()
+    
+    if let Some(string) = option_bytes {
+        bytes = str::parse(string).expect("-n must take an integer value");
     }
 
     wires::Options { 

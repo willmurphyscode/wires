@@ -44,46 +44,39 @@ pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
         else  {
             if current_bytes.len() >= min_consecutive_chars {
                 let result = str::from_utf8(&current_bytes);
-                match result {
-                    Ok(string) => {
-                        let offset_string = offset_string(offset, opts.print_offset);
-                        let write_result = writeln!(w, "{}{}", offset_string, string);
-                        match write_result {
-                            Ok(_) => (),
-                            Err(e) => match e.kind() {
-                                ErrorKind::BrokenPipe => break,
-                                _ => {
-                                    writeln!(stderr(), "{}", e).unwrap();
-                                    process::exit(1);
-                                }
+                if let Ok(string) = result {
+                    let offset_string = offset_string(offset, opts.print_offset);
+                    let write_result = writeln!(w, "{}{}", offset_string, string);
+                    if let Err(e) = write_result {
+                        match e.kind() {
+                            ErrorKind::BrokenPipe => break,
+                            _ => {
+                                writeln!(stderr(), "{}", e).unwrap();
+                                process::exit(1);
                             }
                         }
-                    },
-                    Err(_) => {}
+                    }
                 }
             }
             current_bytes.truncate(0);
-            offset = offset + 1;
+            offset += 1;
         }
     }
     if current_bytes.len() >= min_consecutive_chars {
         let result = str::from_utf8(&current_bytes);
-        match result {
-            Ok(string) => {
-                let offset_string = offset_string(offset, opts.print_offset);
-                let write_result = writeln!(w, "{}{}", offset_string, string);
-                match write_result {
-                    Ok(_) => (),
-                    Err(e) => match e.kind() {
-                        ErrorKind::BrokenPipe => (),
-                        _ => {
-                            writeln!(stderr(), "{}", e).unwrap();                            
-                            process::exit(1);
-                        }
+        if let Ok(string) = result {
+            let offset_string = offset_string(offset, opts.print_offset);
+            let write_result = writeln!(w, "{}{}", offset_string, string);
+            match write_result {
+                Ok(_) => (),
+                Err(e) => match e.kind() {
+                    ErrorKind::BrokenPipe => (),
+                    _ => {
+                        writeln!(stderr(), "{}", e).unwrap();                            
+                        process::exit(1);
                     }
                 }
-            },
-            Err(_) => {}
+            }
         }
     }
 }
