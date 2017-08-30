@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use nom::IResult;
 
 #[derive(Debug)]
@@ -46,7 +48,7 @@ fn char_from_5_bits(fiver: u8) -> char {
 
 fn z_string_fragment(bytes: &[u8]) -> String {
     if let IResult::Done(_, word) = take_z_word(bytes) {
-        let ZWord { first: a, second: b, third: c, last_bit: _ } = word; 
+        let ZWord { first: a, second: b, third: c, .. } = word;
         let chars = vec![
             char_from_5_bits(a),
             char_from_5_bits(b),
