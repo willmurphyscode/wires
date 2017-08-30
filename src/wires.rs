@@ -7,7 +7,8 @@ use std::process;
 pub struct Options {
    pub print_offset: OffsetRadix,
    pub match_length: usize,
-   pub path: String
+   pub path: String,
+   pub zork_mode: bool
 }
 
 #[derive(Clone, Copy)]
@@ -104,7 +105,8 @@ fn it_writes_to_the_buffer() {
     let opts = Options {
         print_offset: OffsetRadix::None,
         match_length: 3,
-        path: "".to_string()
+        path: "".to_string(),
+        zork_mode: false
     };
 
     let mut cursor = Cursor::new(Vec::new());
@@ -123,7 +125,8 @@ fn it_omits_intermediate_nonsense() {
     let opts = Options {
         print_offset: OffsetRadix::None,
         match_length: 3,
-        path: "".to_string()
+        path: "".to_string(),
+        zork_mode: false
     };
 
     let mut bytes : Vec<u8> = Vec::new();

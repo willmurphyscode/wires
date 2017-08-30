@@ -27,6 +27,8 @@ fn parse_options() -> wires::Options {
                             .short("n")
                             .long("bytes")
                             .takes_value(true))
+                        .arg(Arg::with_name("zork")
+                            .long("zork"))
                         .get_matches(); 
 
     let path = matches.value_of("FILE").expect("Please provide a path");
@@ -43,7 +45,8 @@ fn parse_options() -> wires::Options {
     wires::Options { 
         print_offset: radix, 
         match_length: bytes,
-        path: path.to_string()
+        path: path.to_string(),
+        zork_mode: matches.is_present("zork")
     }
 }
 
@@ -61,7 +64,13 @@ fn main() {
                 Ok(_) => {
                     let stdout = io::stdout();
                     let mut handle = stdout.lock();
-                    wires::bytes_to_strings(&contents, &mut handle, &options);
+                    if options.zork_mode {
+                        z_string::dump_string_until_break(&contents, &mut handle);
+                    }
+                    else {
+                        wires::bytes_to_strings(&contents, &mut handle, &options);
+                    }
+                    
                 },
                 Err(_) => {
                     println!("An error occurred reading the buffer");
