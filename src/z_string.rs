@@ -13,21 +13,21 @@ named!( take_5_bits<u8>, bits!( take_bits!( u8, 5 ) ) );
 
 named!( take_bit<u8>, bits!( take_bits!( u8, 1) ) );
 
-named!( take_z_word<(u8,u8,u8,u8)>,
+named!( take_z_word<&[u8],ZWord>,
     bits!(
         do_parse!(
-            first: ( take_bits!( u8, 5 ) ) >>
-            second: ( take_bits!( u8, 5 ) )>>
-            third: ( take_bits!( u8, 5 ) ) >>
-            last_bit: ( take_bits!( u8, 1 ) ) >>
+            first: take_bits!( u8, 5 ) >>
+            second: take_bits!( u8, 5 ) >>
+            third: take_bits!( u8, 5 ) >>
+            last_bit: take_bits!( u8, 1 ) >>
             (
-                // ZWord {
-                //     first: first,
-                //     second: second,
-                //     third: third,
-                //     last_bit: last_bit
-                // }
-                (first, second, third, last_bit)
+                ZWord {
+                    first: first,
+                    second: second,
+                    third: third,
+                    last_bit: last_bit
+                }
+                //(first, second, third, last_bit)
             )
         )
     )   
@@ -48,20 +48,23 @@ fn char_from_5_bits(fiver: u8) -> char {
 */
 
 fn z_string_fragment(bytes: &[u8]) -> String {
-    let word = take_z_word(bytes);
-    println!("********************* {:?}", word);
-    match word {
-        IResult::Incomplete(foo) => println!("{:?}", foo),
-        _ => ()
+    let word_result = take_z_word(bytes);
+    println!("********************* {:?}", word_result);
+    // match word_result {
+    //     IResult::Done(_, word) => println!("{:?}", word),
+    //     _ => ()
+    // }
+    if let IResult::Done(_, word) = word_result {
+        let ZWord { first: a, second: b, third: c, last_bit: _ } = word; 
+        let mut chars = vec![
+            char_from_5_bits(a),
+            char_from_5_bits(b),
+            char_from_5_bits(c)
+        ];
+        let s : String = chars.into_iter().collect();
+        return s;
     }
-    // let ZWord { first: a, second: b, third: c, last_bit: _ } = word; 
-    // let mut chars = vec![
-    //     char_from_5_bits(a),
-    //     char_from_5_bits(b),
-    //     char_from_5_bits(c)
-    // ];
-    // let s : String = chars.into_iter().collect();
-    // s
+
     "NOT IMPLEMENTED".to_string()
 }
 
