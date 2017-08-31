@@ -3,8 +3,12 @@ use std::fs::File;
 use std::process; 
 
 extern crate clap;
+#[macro_use]
+extern crate nom;
 use clap::{Arg, App};
 mod wires;
+use wires::StringExtractor;
+mod z_string;
 
 fn parse_options() -> wires::Options {
     let matches = App::new("Wires: strings in Rust")
@@ -24,6 +28,8 @@ fn parse_options() -> wires::Options {
                             .short("n")
                             .long("bytes")
                             .takes_value(true))
+                        .arg(Arg::with_name("zork")
+                            .long("zork"))
                         .get_matches(); 
 
     let path = matches.value_of("FILE").expect("Please provide a path");
@@ -40,7 +46,8 @@ fn parse_options() -> wires::Options {
     wires::Options { 
         print_offset: radix, 
         match_length: bytes,
-        path: path.to_string()
+        path: path.to_string(),
+        zork_mode: matches.is_present("zork")
     }
 }
 
@@ -58,7 +65,15 @@ fn main() {
                 Ok(_) => {
                     let stdout = io::stdout();
                     let mut handle = stdout.lock();
-                    wires::bytes_to_strings(&contents, &mut handle, &options);
+                    if options.zork_mode {
+                        let extractor = z_string::ZorkStringExtractor{ };
+                        extractor.bytes_to_strings(&contents, &mut handle, &options);
+                    }
+                    else {
+                        let extractor = wires::AsciiExtractor{ };
+                        extractor.bytes_to_strings(&contents, &mut handle, &options);
+                    }
+                    
                 },
                 Err(_) => {
                     println!("An error occurred reading the buffer");
