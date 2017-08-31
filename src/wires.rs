@@ -19,8 +19,8 @@ pub enum OffsetRadix {
     Decimal
 }
 
-trait StringExtractor {
-    fn bytes_to_string<W: Write>(&self, bytes: &[u8], writer: &mut W, options: &Options);
+pub trait StringExtractor {
+    fn bytes_to_strings<W: Write>(&self, bytes: &[u8], writer: &mut W, options: &Options);
     fn offset_string(&self, offset: usize, radix: OffsetRadix) -> String;
 }
 
@@ -33,7 +33,67 @@ pub struct AsciiExtractor {
 }
 
 impl StringExtractor for AsciiExtractor {
-    
+    fn bytes_to_strings<W: Write>(&self, bytes: &[u8], w:  &mut W, opts: &Options) {
+        let min_consecutive_chars = opts.match_length;
+        let mut current_bytes : Vec<u8> = Vec::new(); 
+
+        let mut offset = 0usize; 
+
+        for b in bytes {
+            if b.is_ascii() {
+                current_bytes.push(*b);
+            }
+            else  {
+                if current_bytes.len() >= min_consecutive_chars {
+                    let result = str::from_utf8(&current_bytes);
+                    if let Ok(string) = result {
+                        let offset_string = self.offset_string(offset, opts.print_offset);
+                        let write_result = writeln!(w, "{}{}", offset_string, string);
+                        if let Err(e) = write_result {
+                            match e.kind() {
+                                ErrorKind::BrokenPipe => break,
+                                _ => {
+                                    writeln!(stderr(), "{}", e).unwrap();
+                                    process::exit(1);
+                                }
+                            }
+                        }
+                    }
+                }
+                current_bytes.truncate(0);
+                offset += 1;
+            }
+        }
+        if current_bytes.len() >= min_consecutive_chars {
+            let result = str::from_utf8(&current_bytes);
+            if let Ok(string) = result {
+                let offset_string = self.offset_string(offset, opts.print_offset);
+                let write_result = writeln!(w, "{}{}", offset_string, string);
+                match write_result {
+                    Ok(_) => (),
+                    Err(e) => match e.kind() {
+                        ErrorKind::BrokenPipe => (),
+                        _ => {
+                            writeln!(stderr(), "{}", e).unwrap();                            
+                            process::exit(1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn offset_string(&self, offset: usize, radix: OffsetRadix) -> String {
+        let mut output = "".to_string();
+        match radix {
+            OffsetRadix::Hex => fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap(),
+            OffsetRadix::Octal => fmt::write(&mut output, format_args!("0o{:o}: ", offset)).unwrap(),
+            OffsetRadix::Decimal => fmt::write(&mut output, format_args!("{}: ", offset)).unwrap(),
+            OffsetRadix::None => ()
+        }
+
+        output
+    }
 }
 
 pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
@@ -46,72 +106,13 @@ pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
         },
         None => Ok(OffsetRadix::None)
     }
-
 }
 
 
 
-pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
-    let min_consecutive_chars = opts.match_length;
-    let mut current_bytes : Vec<u8> = Vec::new(); 
 
-    let mut offset = 0usize; 
 
-    for b in bytes {
-        if b.is_ascii() {
-            current_bytes.push(*b);
-        }
-        else  {
-            if current_bytes.len() >= min_consecutive_chars {
-                let result = str::from_utf8(&current_bytes);
-                if let Ok(string) = result {
-                    let offset_string = offset_string(offset, opts.print_offset);
-                    let write_result = writeln!(w, "{}{}", offset_string, string);
-                    if let Err(e) = write_result {
-                        match e.kind() {
-                            ErrorKind::BrokenPipe => break,
-                            _ => {
-                                writeln!(stderr(), "{}", e).unwrap();
-                                process::exit(1);
-                            }
-                        }
-                    }
-                }
-            }
-            current_bytes.truncate(0);
-            offset += 1;
-        }
-    }
-    if current_bytes.len() >= min_consecutive_chars {
-        let result = str::from_utf8(&current_bytes);
-        if let Ok(string) = result {
-            let offset_string = offset_string(offset, opts.print_offset);
-            let write_result = writeln!(w, "{}{}", offset_string, string);
-            match write_result {
-                Ok(_) => (),
-                Err(e) => match e.kind() {
-                    ErrorKind::BrokenPipe => (),
-                    _ => {
-                        writeln!(stderr(), "{}", e).unwrap();                            
-                        process::exit(1);
-                    }
-                }
-            }
-        }
-    }
-}
 
-fn offset_string(offset: usize, radix: OffsetRadix) -> String {
-    let mut output = "".to_string();
-    match radix {
-        OffsetRadix::Hex => fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap(),
-        OffsetRadix::Octal => fmt::write(&mut output, format_args!("0o{:o}: ", offset)).unwrap(),
-        OffsetRadix::Decimal => fmt::write(&mut output, format_args!("{}: ", offset)).unwrap(),
-        OffsetRadix::None => ()
-    }
-
-    output
-}
 
 
 

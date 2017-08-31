@@ -7,6 +7,7 @@ extern crate clap;
 extern crate nom;
 use clap::{Arg, App};
 mod wires;
+use wires::StringExtractor;
 mod z_string;
 
 fn parse_options() -> wires::Options {
@@ -68,7 +69,8 @@ fn main() {
                         z_string::dump_string_until_break(&contents, &mut handle);
                     }
                     else {
-                        wires::bytes_to_strings(&contents, &mut handle, &options);
+                        let extractor = wires::AsciiExtractor{ };
+                        extractor.bytes_to_strings(&contents, &mut handle, &options);
                     }
                     
                 },
