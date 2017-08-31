@@ -2,7 +2,6 @@ use std::io::{stderr, Write, ErrorKind};
 use std::ascii::AsciiExt;
 use std::str;
 use std::fmt;
-use std::fmt::Error;
 use std::process;
 
 pub struct Options {

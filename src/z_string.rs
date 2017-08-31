@@ -48,10 +48,10 @@ impl ZorkStringExtractor {
         }
         bytes_consumed
     }
-    fn dump_zword_vec(&self, words: &Vec<ZWord>) -> String{
+    fn dump_zword_vec(&self, words: &[ZWord]) -> String{
         let mut previous_byte = 0u8;
         let mut strings: Vec<String> = Vec::new();
-        for word in words.into_iter() {
+        for word in words.iter() {
             let (string, last_byte) = word.to_string_with_last_byte(previous_byte);
             previous_byte = last_byte;
             strings.push(string);
