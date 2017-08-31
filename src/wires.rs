@@ -25,10 +25,6 @@ pub trait StringExtractor {
     fn offset_string(&self, offset: usize, radix: OffsetRadix) -> String;
 }
 
-// trait MinLengthContribution {
-//     fn contribution(&self) -> usize; 
-// }
-
 pub struct AsciiExtractor {
 
 }
@@ -108,15 +104,6 @@ pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
         None => Ok(OffsetRadix::None)
     }
 }
-
-
-
-
-
-
-
-
-
 
 #[test]
 fn it_writes_to_the_buffer() {
