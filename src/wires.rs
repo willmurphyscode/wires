@@ -19,6 +19,23 @@ pub enum OffsetRadix {
     Decimal
 }
 
+trait StringExtractor {
+    fn bytes_to_string<W: Write>(&self, bytes: &[u8], writer: &mut W, options: &Options);
+    fn offset_string(&self, offset: usize, radix: OffsetRadix) -> String;
+}
+
+// trait MinLengthContribution {
+//     fn contribution(&self) -> usize; 
+// }
+
+pub struct AsciiExtractor {
+
+}
+
+impl StringExtractor for AsciiExtractor {
+    
+}
+
 pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
     match input{
         Some(string) => match string {
@@ -31,6 +48,8 @@ pub fn string_to_offset_radix(input: Option<&str>) -> Result<OffsetRadix, ()> {
     }
 
 }
+
+
 
 pub fn bytes_to_strings<W: Write>(bytes: &[u8], w:  &mut W, opts: &Options) {
     let min_consecutive_chars = opts.match_length;
