@@ -101,16 +101,16 @@ named!( take_5_bits<u8>, bits!( take_bits!( u8, 5 ) ) );
 named!( take_z_word<&[u8],ZWord>,
     bits!(
         do_parse!(
+            word_end_bit: take_bits!( u8, 1 ) >>            
             first: take_bits!( u8, 5 ) >>
             second: take_bits!( u8, 5 ) >>
             third: take_bits!( u8, 5 ) >>
-            last_bit: take_bits!( u8, 1 ) >>
             (
                 ZWord {
                     first: first,
                     second: second,
                     third: third,
-                    last_bit: last_bit
+                    last_bit: word_end_bit
                 }
             )
         )
