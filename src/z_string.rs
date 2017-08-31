@@ -3,6 +3,8 @@
 use nom::IResult;
 use std::io::{stderr, Write, ErrorKind};
 use std::process;
+use std::fmt;
+use wires::{OffsetRadix, Options, StringExtractor};
 
 #[derive(Debug)]
 struct ZWord {
@@ -22,6 +24,74 @@ impl ZWord {
         ];
         let s : String = chars.into_iter().collect();   
         s  
+    }
+}
+
+pub struct ZorkStringExtractor {
+
+}
+
+impl ZorkStringExtractor {
+    fn read_until_break(&self, bytes: &[u8], collection: &mut Vec<ZWord>) -> usize {
+        let mut bytes_consumed = 0usize; 
+        let mut slice = bytes; 
+        loop {
+            let result = take_z_word(slice);
+            if let IResult::Done(rest, word) = result {
+                bytes_consumed += 2; 
+                let should_break = word.last_bit == 1 || rest.len() <= 2; 
+                collection.push(word);
+                slice = rest;
+                if should_break { break; }            
+            }
+        }
+        bytes_consumed
+    }
+    fn dump_zword_vec(&self, words: &Vec<ZWord>) -> String{
+        let strings : Vec<String> = words
+            .into_iter()
+            .map(|zword| zword.to_string())
+            .collect();
+
+        strings.concat()
+    }
+}
+
+impl StringExtractor for ZorkStringExtractor {
+    fn bytes_to_strings<W: Write>(&self, bytes: &[u8], writer: &mut W, options: &Options) {
+        let length = bytes.len();
+        let mut offset = 0usize; 
+        let mut collection : Vec<ZWord> = Vec::new();
+        
+        while offset < (length - 2) {
+            let bytes_consumed = self.read_until_break(&bytes[offset..], &mut collection);
+            let o_string = self.offset_string(offset, options.print_offset);
+            let string = self.dump_zword_vec(&collection); 
+            let write_result = writeln!(writer, "{}{}", o_string, string);
+            if let Err(e) = write_result {
+                match e.kind() {
+                    ErrorKind::BrokenPipe => break,
+                        _ => {
+                            writeln!(stderr(), "{}", e).unwrap();
+                            process::exit(1);
+                        }
+                }
+            }
+            offset += bytes_consumed; 
+            collection.truncate(0);
+        }
+    }
+
+    fn offset_string(&self, offset: usize, radix: OffsetRadix) -> String {
+        let mut output = "".to_string();
+        match radix {
+            OffsetRadix::Hex => fmt::write(&mut output, format_args!("0x{:X}: ", offset)).unwrap(),
+            OffsetRadix::Octal => fmt::write(&mut output, format_args!("0o{:o}: ", offset)).unwrap(),
+            OffsetRadix::Decimal => fmt::write(&mut output, format_args!("{}: ", offset)).unwrap(),
+            OffsetRadix::None => ()
+        }
+
+        output
     }
 }
 

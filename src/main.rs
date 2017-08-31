@@ -66,7 +66,8 @@ fn main() {
                     let stdout = io::stdout();
                     let mut handle = stdout.lock();
                     if options.zork_mode {
-                        z_string::dump_string_until_break(&contents, &mut handle);
+                        let extractor = z_string::ZorkStringExtractor{ };
+                        extractor.bytes_to_strings(&contents, &mut handle, &options);
                     }
                     else {
                         let extractor = wires::AsciiExtractor{ };
