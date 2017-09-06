@@ -48,6 +48,7 @@ impl ZorkStringExtractor {
         }
         bytes_consumed
     }
+
     fn dump_zword_vec(&self, words: &[ZWord]) -> String{
         let mut previous_byte = 0u8;
         let mut strings: Vec<String> = Vec::new();
@@ -66,7 +67,7 @@ impl StringExtractor for ZorkStringExtractor {
         let length = bytes.len();
         let mut offset = 0usize; 
         let mut collection : Vec<ZWord> = Vec::new();
-        
+
         while offset < (length - 2) {
             let bytes_consumed = self.read_until_break(&bytes[offset..], &mut collection);
             let o_string = self.offset_string(offset, options.print_offset);
@@ -75,10 +76,10 @@ impl StringExtractor for ZorkStringExtractor {
             if let Err(e) = write_result {
                 match e.kind() {
                     ErrorKind::BrokenPipe => break,
-                        _ => {
-                            writeln!(stderr(), "{}", e).unwrap();
-                            process::exit(1);
-                        }
+                    _ => {
+                        writeln!(stderr(), "{}", e).unwrap();
+                        process::exit(1);
+                    }
                 }
             }
             offset += bytes_consumed; 
