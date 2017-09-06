@@ -11,19 +11,20 @@ struct ZWord {
     first: u8,
     second: u8,
     third: u8,
-    last_bit: u8
+    word_end_bit: u8
 }
 
+
 impl ZWord {
-    pub fn to_string(&self) -> String {
+    pub fn to_string_with_last_byte(&self, previous_byte: u8) -> (String, u8) {
         let ZWord { first: a, second: b, third: c, .. } = *self;
         let chars = vec![
-            char_from_5_bits(a),
-            char_from_5_bits(b),
-            char_from_5_bits(c)
+            char_from_5_bits(a, previous_byte),
+            char_from_5_bits(b, a),
+            char_from_5_bits(c, b)
         ];
         let s : String = chars.into_iter().collect();   
-        s  
+        (s, c)
     }
 }
 
@@ -39,7 +40,7 @@ impl ZorkStringExtractor {
             let result = take_z_word(slice);
             if let IResult::Done(rest, word) = result {
                 bytes_consumed += 2; 
-                let should_break = word.last_bit == 1 || rest.len() <= 2; 
+                let should_break = word.word_end_bit == 1 || rest.len() <= 2; 
                 collection.push(word);
                 slice = rest;
                 if should_break { break; }            
@@ -47,11 +48,14 @@ impl ZorkStringExtractor {
         }
         bytes_consumed
     }
-    fn dump_zword_vec(&self, words: &Vec<ZWord>) -> String{
-        let strings : Vec<String> = words
-            .into_iter()
-            .map(|zword| zword.to_string())
-            .collect();
+    fn dump_zword_vec(&self, words: &[ZWord]) -> String{
+        let mut previous_byte = 0u8;
+        let mut strings: Vec<String> = Vec::new();
+        for word in words.iter() {
+            let (string, last_byte) = word.to_string_with_last_byte(previous_byte);
+            previous_byte = last_byte;
+            strings.push(string);
+        }
 
         strings.concat()
     }
@@ -110,33 +114,31 @@ named!( take_z_word<&[u8],ZWord>,
                     first: first,
                     second: second,
                     third: third,
-                    last_bit: word_end_bit
+                    word_end_bit: word_end_bit
                 }
             )
         )
     )   
 );
 
-fn char_from_5_bits(fiver: u8) -> char {
+fn char_from_5_bits(fiver: u8, previous_byte: u8) -> char {
+
     let alphabet_table: Vec<char> = vec![
         ' ', '?', '?', '?', '?', '?', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
         'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' ];
-    alphabet_table[fiver as usize]
-}
+    let uppercase_chars: Vec<char> = vec![
+        ' ', '?', '?', '?', '?', '?', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' ];
 
-/* The other two alphabet tables
-[| " "; "?"; "?"; "?"; "?"; "?"; "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J";
-   "K"; "L"; "M"; "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z" |];
-[| " "; "?"; "?"; "?"; "?"; "?"; "?"; "\n"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7";
-   "8"; "9"; "."; ","; "!"; "?"; "_"; "#"; "'"; "\""; "/"; "\\"; "-"; ":"; "("; ")" |] |]
-*/
+    let punctuation_chars: Vec<char> = vec![
+        ' ', '?', '?', '?', '?', '?', '?', '\n', '0', '1', '2', '3', '4', '5', '6', '7',
+        '8', '9', '.', ',', '!', '?', '_', '#', '\'', '"', '/', '\\', '-', ':', '(', ')' ];
 
-fn z_string_fragment(bytes: &[u8]) -> String {
-    if let IResult::Done(_, word) = take_z_word(bytes) {
-       return word.to_string();
+    match previous_byte {
+        4u8 => uppercase_chars[fiver as usize],
+        5u8 => punctuation_chars[fiver as usize],
+        _ => alphabet_table[fiver as usize]
     }
-    //TODO handle error case
-    "NOT IMPLEMENTED".to_string()
 }
 
 fn read_until_break(bytes: &[u8], collection: &mut Vec<ZWord>) {
@@ -144,32 +146,10 @@ fn read_until_break(bytes: &[u8], collection: &mut Vec<ZWord>) {
     loop {
         let result = take_z_word(slice);
         if let IResult::Done(rest, word) = result {
-            let should_break = word.last_bit == 1 || rest.len() <= 2; 
+            let should_break = word.word_end_bit == 1 || rest.len() <= 2; 
             collection.push(word);
             slice = rest;
             if should_break { break; }            
-        }
-    }
-}
-
-pub fn dump_string_until_break<W: Write>(bytes: &[u8], writer: &mut W) {
-    let mut collection : Vec<ZWord> = Vec::new();
-    read_until_break(bytes, &mut collection);
-    let strings : Vec<String> = collection
-        .into_iter()
-        .map(|z_word| z_word.to_string())
-        .collect();
-
-    for s in strings.into_iter() {
-        let write_result = writeln!(writer, "{}", s);
-        if let Err(e) = write_result {
-            match e.kind() {
-                ErrorKind::BrokenPipe => break,
-                    _ => {
-                        writeln!(stderr(), "{}", e).unwrap();
-                        process::exit(1);
-                    }
-            }
         }
     }
 }
